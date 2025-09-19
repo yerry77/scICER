@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # ===============================================================
 # Script: run_scICER_RNA_SNN.R
-# Purpose: Run scICER clustering on data normalized with Seurat's RNA assay (NormalizeData) using SNN graph and Shared Nearest Neighbor (SNN) graph construction.
+# Purpose: Run scICER clustering on data normalized with Seurat's RNA assay (NormalizeData) using Shared Nearest Neighbor (SNN) graph construction.
 # Input:  CSV/CSV.GZ expression matrix (genes × cells) OR qs file containing Seurat object.
 # Output: UMAP plots, IC plot, clustering results (tsv, qs).
 # ===============================================================
