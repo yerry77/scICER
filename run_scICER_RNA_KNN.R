@@ -1,0 +1,128 @@
+#!/usr/bin/env Rscript
+# ===============================================================
+# Script: run_scICER_RNA_KNN.R
+# Purpose: Run scICER clustering on data normalized with Seurat's RNA assay (NormalizeData) using KNN graph construction.
+# Input:  CSV/CSV.GZ expression matrix (genes × cells) OR qs file containing Seurat object.
+# Output: UMAP plots, IC plot, clustering results (tsv, qs).
+# ===============================================================
+
+library(Seurat)
+library(ggplot2)
+library(qs)
+library(readr)
+library(cowplot)
+library(tidyverse)
+library(mclust)
+library(scICER)
+library(ClustAssess)
+library(uwot)
+
+# Parse input arguments
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) < 1) {
+  stop("Usage: Rscript run_scICER_single_sample.R <input.csv.gz|input.qs>")
+}
+file_path <- args[1]
+
+output_base_dir <- "results"
+nthreads_qread <- 40
+sample_name <- gsub('\\.csv\\.gz$|\\.qs$', '', basename(file_path))
+message("Processing file: ", file_path)
+
+# Load input
+if (grepl("\\.qs$", file_path)) {
+  # Seurat object in qs format
+  seurat_filtered <- qs::qread(file_path, nthreads = nthreads_qread)
+} else if (grepl("\\.csv(\\.gz)?$", file_path)) {
+  # Expression matrix (genes x cells)
+  expr_matrix <- read.csv(file_path, row.names = 1, check.names = FALSE)
+  seurat_filtered <- CreateSeuratObject(counts = expr_matrix, project = sample_name)
+} else {
+  stop("Unsupported file type. Use .csv/.csv.gz (expression matrix) or .qs (Seurat object).")
+}
+
+
+# Remove old clustering columns if they exist
+meta_cols <- colnames(seurat_filtered@meta.data)
+cols_to_remove <- grep("^clusters_", meta_cols, value = TRUE)
+seurat_filtered@meta.data <- seurat_filtered@meta.data[, !(meta_cols %in% cols_to_remove)]
+
+# Standard Seurat pipeline
+seurat_filtered <- NormalizeData(seurat_filtered)
+seurat_filtered <- FindVariableFeatures(seurat_filtered)  
+seurat_filtered <- ScaleData(seurat_filtered)
+seurat_filtered <- RunPCA(seurat_filtered)
+seurat_filtered <- RunUMAP(seurat_filtered, dims = 1:30)
+seurat_filtered <- FindNeighbors(seurat_filtered, dims = 1:30)
+
+# Create output directory
+output_dir <- file.path(output_base_dir, sample_name)
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Save UMAP colored by cell type
+pdf(file.path(output_dir,  "umap.celltype.pdf"), width = 7.5, height = 6)
+DimPlot(seurat_filtered, group.by = 'celltype')
+dev.off()
+
+# Run scICER clustering
+sample_obj <- seurat_filtered
+scice_results <- scICE_clustering(
+  object = sample_obj,
+  cluster_range = 2:20,
+  remove_threshold = Inf,
+  n_workers = 8,
+  n_trials = 15,
+  n_bootstrap = 100,
+  seed = 123,
+  verbose = TRUE,
+  graph_name="RNA_nn"
+)
+
+# Save IC plot
+ic_plot <- plot_ic(scice_results, threshold = 1.005)
+ggsave(filename = file.path(output_dir, "scICER_IC_plot.pdf"),
+       plot = ic_plot, device = "pdf", width = 7.5, height = 4.5)
+
+write_tsv(ic_plot$data, file.path(output_dir, "scICER_plot_data.tsv"))
+
+# Create dataframe with IC and ECS scores
+df <- data.frame(
+  cluster_number = scice_results$n_cluster,
+  ic_score = scice_results$ic
+)
+df$is_consistent <- df$ic_score <= 1.005
+
+# Evaluate ECS scores
+seurat_filtered.df <- get_robust_labels(scice_results, return_seurat = FALSE, threshold = Inf)
+seurat_filtered.df$celltype <- seurat_filtered@meta.data$celltype
+
+for (k in 2:20) {
+  cluster_col <- paste0("clusters_", k)
+  if (cluster_col %in% names(seurat_filtered.df)) {
+    ari_score <- element_sim(seurat_filtered.df$celltype, seurat_filtered.df[[cluster_col]])
+    df[df$cluster_number == k, "ECS_score"] <- ari_score
+  } else {
+    df[df$cluster_number == k, "ECS_score"] <- NA
+  }
+}
+
+# Save results
+sample_obj <- get_robust_labels(scice_results, return_seurat = TRUE, threshold = Inf)
+write_tsv(df, file.path(output_dir, "scICER_cluster_data.tsv"))
+qs::qsave(sample_obj, file = file.path(output_dir, "seurat.scICER.qs"), nthreads = nthreads_qread)
+
+# Generate clustering UMAPs
+dimplot_list <- list()
+for (k in 2:20) {
+  col_name <- paste0("clusters_", k)
+  if (col_name %in% colnames(sample_obj@meta.data)) {
+    dimplot_list[[col_name]] <- DimPlot(sample_obj, group.by = col_name, label = TRUE) +
+      ggtitle(paste("Clusters:", k))
+  }
+}
+dimplot_list[['celltype']] <- DimPlot(sample_obj, group.by = "celltype", label = TRUE) +
+  ggtitle("celltype")
+
+dimplot_grid <- cowplot::plot_grid(plotlist = dimplot_list, ncol = 5)
+ggsave(filename = file.path(output_dir, "scICER_DimPlot_grid.pdf"),
+       plot = dimplot_grid, device = "pdf", width = 32, height = 16)
