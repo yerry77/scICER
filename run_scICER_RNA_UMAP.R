@@ -36,11 +36,6 @@ message("Processing file: ", file_path)
 # Load Seurat object
 seurat_filtered <- qs::qread(file_path, nthreads = nthreads_qread)
 
-# Remove old clustering columns
-meta_cols <- colnames(seurat_filtered@meta.data)
-cols_to_remove <- grep("^clusters_", meta_cols, value = TRUE)
-seurat_filtered@meta.data <- seurat_filtered@meta.data[, !(meta_cols %in% cols_to_remove)]
-
 # Standard RNA normalization pipeline
 seurat_filtered <- NormalizeData(seurat_filtered)
 seurat_filtered <- FindVariableFeatures(seurat_filtered)  
