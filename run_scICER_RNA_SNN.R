@@ -1,4 +1,11 @@
 #!/usr/bin/env Rscript
+# ===============================================================
+# Script: run_scICER_RNA_SNN.R
+# Purpose: Run scICER clustering on data normalized with Seurat's RNA assay (NormalizeData) using SNN graph and Shared Nearest Neighbor (SNN) graph construction.
+# Input:  CSV/CSV.GZ expression matrix (genes × cells) OR qs file containing Seurat object.
+# Output: UMAP plots, IC plot, clustering results (tsv, qs).
+# ===============================================================
+
 library(Seurat)
 library(ggplot2)
 library(qs)
@@ -118,4 +125,3 @@ dimplot_list[['celltype']] <- DimPlot(sample_obj, group.by = "celltype", label =
 dimplot_grid <- cowplot::plot_grid(plotlist = dimplot_list, ncol = 5)
 ggsave(filename = file.path(output_dir, "scICER_DimPlot_grid.pdf"),
        plot = dimplot_grid, device = "pdf", width = 32, height = 16)
-
