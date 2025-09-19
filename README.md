@@ -1,2 +1,2 @@
 # scICER 
-## codes to run scICER examples
+## codes examples to run scICER 
