@@ -1,5 +1,48 @@
 #!/usr/bin/env Rscript
-# Example script: Harmony integration + scICER clustering on single-cell data
+
+# Harmony Integration + scICER Clustering on Single-Cell Data
+# Workflow Overview:
+# 
+# 1. Environment Setup:
+#    - Load R libraries for Seurat, Harmony, scICER, plotting, and data handling.
+#    - Python environment is optional (only if using Scanpy for other preprocessing).
+#
+# 2. Input/Output:
+#    - Define input Seurat object file (preprocessed single-cell dataset).
+#    - Define output directories and create them if they do not exist.
+#
+# 3. Batch Correction using Harmony:
+#    - Run Harmony integration to remove batch effects based on a technical covariate (e.g., "tech").
+#    - Harmony operates on PCA-reduced dimensions and stores corrected embeddings as "harmony_pca".
+#
+# 4. Dimensionality Reduction:
+#    - Generate UMAP embedding based on Harmony-corrected PCA space.
+#    - Store UMAP coordinates in Seurat object as "harmony_umap".
+#
+# 5. Nearest Neighbor Graphs:
+#    - Construct kNN and SNN graphs using Harmony PCA space.
+#    - These graphs are used as input for scICER clustering.
+#
+# 6. scICER Clustering:
+#    - Perform bootstrapped clustering across a range of cluster numbers.
+#    - Compute IC scores to assess consistency of clusters.
+#    - Compute ECS scores to evaluate similarity to known cell types.
+#
+# 7. Optimal Cluster Selection:
+#    - Select clusters with IC <= 1.005 and maximum ECS score.
+#    - Assign robust cluster labels to Seurat object as "optimal_cluster".
+#
+# 8. Visualization:
+#    - Generate four UMAP plots:
+#       a) UMAP colored by batch/technology (default assay)
+#       b) Harmony UMAP colored by batch/technology
+#       c) Harmony UMAP colored by known cell types
+#       d) Harmony UMAP colored by optimal scICER cluster
+#    - Plots use default colors and remove background grids for clarity.
+#
+# 9. Output:
+#    - Save combined UMAP plots and IC plot as PDF.
+#    - Save ECS scores table as CSV.
 
 library(Seurat)
 library(ggplot2)
