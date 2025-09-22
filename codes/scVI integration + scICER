@@ -1,0 +1,153 @@
+# Example R script: scVI integration + scICER clustering
+# This script demonstrates the following steps:
+# 1. Load a Seurat object pre-processed with scVI.
+# 2. Construct neighbor graphs based on the scVI latent space.
+# 3. Run UMAP for visualization.
+# 4. Perform scICER clustering to identify robust clusters.
+# 5. Compute ECS scores and define the optimal cluster.
+# 6. Generate four UMAP plots:
+#    - Standard UMAP colored by batch/technology
+#    - UMAP colored by batch/technology (scVI UMAP)
+#    - UMAP colored by cell type
+#    - UMAP colored by optimal scICER cluster
+# 7. Save plots and cluster data.
+
+library(Seurat)
+library(ggplot2)
+library(qs)
+library(tidyverse)
+library(scICER)
+library(uwot)
+library(cowplot)
+library(reticulate)
+
+# Use Python environment
+reticulate::use_python("/path/to/python/env/bin/python")
+sc <- import("scanpy", convert = FALSE)
+scvi <- import("scvi", convert = FALSE)
+
+# Load Seurat object
+sample_obj <- qs::qread("data/seurat_scvi_example.qs")
+
+# Find neighbors using scVI latent space
+n_scvi_dims <- ncol(sample_obj@reductions$scvi)
+sample_obj <- FindNeighbors(
+  sample_obj, 
+  reduction = "scvi",
+  dims = 1:n_scvi_dims,
+  graph.name = c('scvi_nn', 'scvi_snn')
+)
+
+# Run UMAP
+scvi_graph <- Embeddings(sample_obj, reduction = "scvi")
+umap_result <- umap(
+  scvi_graph, 
+  ret_model = TRUE, 
+  ret_extra = c("fgraph"), 
+  min_dist = 0.1,
+  metric = "cosine",
+  n_neighbors = 15L,
+  n_components = 2L
+)
+umap_coords <- umap_result$embedding
+umap_graph <- umap_result$fgraph
+
+sample_obj[["umap_scvi_umapR"]] <- CreateDimReducObject(
+  embeddings = umap_coords,
+  key = "UMAP_",
+  assay = DefaultAssay(sample_obj)
+)
+row.names(umap_graph) <- row.names(sample_obj@meta.data)
+colnames(umap_graph) <- row.names(sample_obj@meta.data)
+sample_obj[["scvi_umap_graph"]] <- as.Graph(umap_graph)
+
+# scICER clustering
+scice_results <- scICE_clustering(
+  object = sample_obj,
+  cluster_range = 2:20,
+  remove_threshold = 1.005,
+  n_workers = 8,
+  n_trials = 30,
+  n_bootstrap = 200,
+  seed = 123,          
+  verbose = TRUE,
+  graph_name = "scvi_umap_graph"
+)
+
+# Compute ECS scores and define optimal cluster
+df <- data.frame(cluster_number = scice_results$n_cluster, ic_score = scice_results$ic)
+df$is_consistent <- df$ic_score <= 1.005
+
+sample_obj_df <- get_robust_labels(scice_results, return_seurat = FALSE, threshold = Inf)
+sample_obj_df$celltype <- sample_obj@meta.data$celltype
+for (k in 2:20) {
+  cluster_col <- paste0("clusters_", k)
+  if (cluster_col %in% names(sample_obj_df)) {
+    df[df$cluster_number == k, "ECS_score"] <- element_sim(sample_obj_df$celltype, sample_obj_df[[cluster_col]])
+  } else {
+    df[df$cluster_number == k, "ECS_score"] <- NA
+  }
+}
+
+valid_clusters <- df[df$is_consistent, ]
+optimal_cluster <- valid_clusters$cluster_number[which.max(valid_clusters$ECS_score)]
+sample_obj <- get_robust_labels(scice_results, return_seurat = TRUE, threshold = Inf)
+sample_obj$optimal_cluster <- sample_obj[[paste0("clusters_", optimal_cluster)]]
+
+# --------------------------- Generate four UMAP plots ---------------------------
+# Plot 1: Standard UMAP colored by batch/technology
+p1 <- DimPlot(sample_obj, reduction = "umap", group.by = "tech", pt.size = 3, alpha = 1, raster = TRUE) +
+  theme(
+    axis.ticks.length = unit(-0.15, "cm"),
+    axis.text = element_text(margin = margin(3,3,3,3)),
+    panel.border = element_rect(color="black", fill=NA, linewidth=1),
+    legend.position = "bottom",
+    legend.direction = "vertical",
+    legend.box = "vertical",
+    panel.grid = element_blank()
+  )
+# Plot 2: UMAP (scVI) colored by batch/technology
+p2 <- DimPlot(sample_obj, reduction = "umap_scvi_umapR", group.by = "tech", pt.size = 3, alpha = 1, raster = TRUE) +
+  theme(
+    axis.ticks.length = unit(-0.15, "cm"),
+    axis.text = element_text(margin = margin(3,3,3,3)),
+    panel.border = element_rect(color="black", fill=NA, linewidth=1),
+    legend.position = "bottom",
+    legend.direction = "vertical",
+    legend.box = "vertical",
+    panel.grid = element_blank()
+  )
+
+# Plot 3: UMAP (scVI) colored by cell type
+p3 <- DimPlot(sample_obj, reduction = "umap_scvi_umapR", group.by = "celltype", label = TRUE, pt.size = 3, alpha = 1, raster = TRUE) +
+  theme(
+    axis.ticks.length = unit(-0.15, "cm"),
+    axis.text = element_text(margin = margin(3,3,3,3)),
+    panel.border = element_rect(color="black", fill=NA, linewidth=1),
+    legend.position = "bottom",
+    legend.direction = "vertical",
+    legend.box = "vertical",
+    panel.grid = element_blank()  # remove grid lines
+  )
+
+# Plot 4: UMAP (scVI) colored by optimal scICER cluster
+p4 <- DimPlot(sample_obj, reduction = "umap_scvi_umapR", group.by = "optimal_cluster", label = TRUE, pt.size = 3, alpha = 1, raster = TRUE) +
+  theme(
+    axis.ticks.length = unit(-0.15, "cm"),
+    axis.text = element_text(margin = margin(3,3,3,3)),
+    panel.border = element_rect(color="black", fill=NA, linewidth=1),
+    legend.position = "bottom",
+    legend.direction = "vertical",
+    legend.box = "vertical",
+    panel.grid = element_blank()
+  )
+
+# Combine plots into 2x2 grid
+plot_all <- cowplot::plot_grid(p1, p2, p3, p4, ncol = 2)
+
+# Save the combined figure
+ggsave("outputs/scvi_umap_4plots.pdf", plot = plot_all, width = 12, height = 10, dpi = 1200)
+
+# Save cluster data and Seurat object
+write.csv(df, "outputs/scvi_cluster_data.csv", row.names = FALSE)
+qs::qsave(sample_obj, "outputs/seurat_scvi_final.qs", nthreads = 8)
