@@ -51,21 +51,23 @@ for (file_path in files) {
   qs::qsave(seurat_obj, file = file.path(output_dir, paste0(object_name, ".qs")), nthreads = 40)
 }
 
----
 
-## 2. Integration benchmark datasets for scICER
 
-### Source
-These datasets are from the article:  
-**"Benchmarking atlas-level data integration in single-cell genomics" (Nature Methods)**  https://www.nature.com/articles/s41592-021-01336-8#data-availability
+2. Integration benchmark datasets for scICER
+Source
+
+These datasets are from the article:
+"Benchmarking atlas-level data integration in single-cell genomics" (Nature Methods)
+https://www.nature.com/articles/s41592-021-01336-8#data-availability
 
 Download from Figshare:
-https://figshare.com/articles/dataset/Benchmarking_atlas-level_data_integration_in_single-cell_genomics_-_integration_task_datasets_Immune_and_pancreas_/12420968 
+https://figshare.com/articles/dataset/Benchmarking_atlas-level_data_integration_in_single-cell_genomics_-integration_task_datasets_Immune_and_pancreas/12420968
 
-Data format: `.h5ad`
+Data format: .h5ad
 
-### Conversion to Seurat objects
-H5AD files can be converted to **Seurat objects** (`.qs`) for convenient analysis in R:
+Conversion to Seurat objects
+
+H5AD files can be converted to Seurat objects (.qs) for convenient analysis in R:
 
 ```r
 library(Seurat)
