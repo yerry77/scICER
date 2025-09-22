@@ -128,10 +128,20 @@ scice_results <- scICE_clustering(
   n_bootstrap = 100,
   seed = 123,
   verbose = TRUE,
-  graph_name="RNA_snn"
-  # "RNA_snn" means using RNA assay and SNN graph; "RNA_nn" means using RNA assay and KNN graph; "RNA_umap" means using RNA assay and UMAP graph
-  # "SCT_snn" means using SCT assay and SNN graph; "SCT_nn" means using SCT assay and KNN graph; "umap_graph" means using SCT assay and UMAP graph
-  # "RNA_snn" means using SNN graph from scLENS preprocessing; "RNA_nn" means using KNN graph from scLENS preprocessing; "umap_graph" means using UMAP graph from scLENS preprocessing
+  graph_name = "RNA_snn"  # Graph to use for clustering:
+                         # RNA method:
+                         #   "RNA_snn"   - RNA method, SNN graph
+                         #   "RNA_nn"    - RNA method, KNN graph
+                         #   "RNA_umap"  - RNA method, UMAP graph
+                         # SCT method:
+                         #   "SCT_snn"   - SCT method, SNN graph
+                         #   "SCT_nn"    - SCT method, KNN graph
+                         #   "umap_graph"- SCT method, UMAP graph
+                         # scLENS method:
+                         #   "RNA_snn"   - SNN graph from scLENS preprocessing
+                         #   "RNA_nn"    - KNN graph from scLENS preprocessing
+                         #   "umap_graph"- UMAP graph from scLENS preprocessing
+
 )
 
 # Save IC plot
