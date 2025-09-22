@@ -132,7 +132,7 @@ scice_results <- scICE_clustering(
                          # RNA method:
                          #   "RNA_snn"   - RNA method, SNN graph
                          #   "RNA_nn"    - RNA method, KNN graph
-                         #   "RNA_umap"  - RNA method, UMAP graph
+                         #   "umap_graph"  - RNA method, UMAP graph
                          # SCT method:
                          #   "SCT_snn"   - SCT method, SNN graph
                          #   "SCT_nn"    - SCT method, KNN graph
