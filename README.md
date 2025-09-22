@@ -1,6 +1,7 @@
-# scICER: Consistent Clustering for scRNA-seq in R
+# scICER: A Flexible R Package for Assessing Clustering Stability in Integrated Single-Cell Analyses
 
-### **scICER** is an R package for evaluating cluster consistency in single-cell RNA-seq data. It reimplements the scICE methodology to assess the stability of cluster labels across stochastic runs. Fully integrated with Seurat, scICER works on embeddings corrected by Harmony or scVI, enabling consistent clustering analysis in complex, multi-sample datasets.
+### Introduction
+**scICER** is an R package for evaluating cluster consistency in single-cell RNA-seq data. It reimplements the scICE methodology to assess the stability of cluster labels across stochastic runs. Fully integrated with Seurat, scICER works on embeddings corrected by Harmony or scVI, enabling consistent clustering analysis in complex, multi-sample datasets.
 
 ## codes examples to run scICER 
 ### This folder contains example R scripts demonstrating the use of **scICER**, a tool for consistent clustering of single-cell RNA-seq data. 
