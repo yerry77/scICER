@@ -1,16 +1,42 @@
-# Example R script: scVI integration + scICER clustering
-# This script demonstrates the following steps:
-# 1. Load a Seurat object pre-processed with scVI.
-# 2. Construct neighbor graphs based on the scVI latent space.
-# 3. Run UMAP for visualization.
-# 4. Perform scICER clustering to identify robust clusters.
-# 5. Compute ECS scores and define the optimal cluster.
-# 6. Generate four UMAP plots:
-#    - Standard UMAP colored by batch/technology
-#    - UMAP colored by batch/technology (scVI UMAP)
-#    - UMAP colored by cell type
-#    - UMAP colored by optimal scICER cluster
-# 7. Save plots and cluster data.
+# scVI Integration + scICER Clustering on Single-Cell Data
+# Workflow Overview:
+#
+# 1. Environment Setup:
+#    - Load R libraries for Seurat, scICER, plotting, and data handling.
+#    - Use a Python environment with scVI and scanpy installed via reticulate.
+#
+# 2. Input/Output:
+#    - Define input Seurat object preprocessed with scVI latent space.
+#    - Define output directories and create them if they do not exist.
+#
+# 3. Dimensionality Reduction:
+#    - Use scVI latent space for nearest neighbor graph construction.
+#    - Run UMAP embedding based on scVI latent space.
+#
+# 4. Neighbor Graph Construction:
+#    - Build kNN and SNN graphs using scVI latent space.
+#    - These graphs are used as input for scICER clustering.
+#
+# 5. scICER Clustering:
+#    - Perform bootstrapped clustering across a range of cluster numbers.
+#    - Compute IC scores to assess cluster consistency.
+#    - Compute ECS scores to evaluate similarity to known cell types.
+#
+# 6. Optimal Cluster Selection:
+#    - Select clusters with IC <= 1.005 and maximum ECS score.
+#    - Assign robust cluster labels to Seurat object as "optimal_cluster".
+#
+# 7. Visualization:
+#    - Generate four UMAP plots:
+#       a) Standard UMAP colored by batch/technology
+#       b) scVI UMAP colored by batch/technology
+#       c) scVI UMAP colored by cell type
+#       d) scVI UMAP colored by optimal scICER cluster
+#    - Plots use default colors and remove background grids for clarity.
+#
+# 8. Output:
+#    - Save combined UMAP plots and IC plot as PDF.
+#    - Save ECS scores table as CSV.
 
 library(Seurat)
 library(ggplot2)
