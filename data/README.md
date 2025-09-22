@@ -10,7 +10,7 @@ For the main clustering workflow, see https://github.com/yerry77/scICER-workflow
 
 ### Source
 These datasets are from the article:  
-**"scICE: enhancing clustering reliability and efficiency of scRNA-seq data with multi-cluster label consistency evaluation"**
+**"scICE: enhancing clustering reliability and efficiency of scRNA-seq data with multi-cluster label consistency evaluation"** https://www.nature.com/articles/s41467-025-60702-8#code-availability
 
 Download from Zenodo:  
 [https://zenodo.org/records/15113898](https://zenodo.org/records/15113898)
@@ -48,7 +48,7 @@ for (file_path in files) {
   seurat_obj <- CreateSeuratObject(counts = expr_mat, project = object_name)
   seurat_obj$celltype <- raw_data$X1[2:nrow(raw_data)]
   
-  qs::qsave(seurat_obj, file = file.path(output_dir, paste0(object_name, ".qs")), nthreads = 4)
+  qs::qsave(seurat_obj, file = file.path(output_dir, paste0(object_name, ".qs")), nthreads = 40)
 }
 
 ---
@@ -57,10 +57,10 @@ for (file_path in files) {
 
 ### Source
 These datasets are from the article:  
-**"Benchmarking atlas-level data integration in single-cell genomics" (Nature Methods)**  
+**"Benchmarking atlas-level data integration in single-cell genomics" (Nature Methods)**  https://www.nature.com/articles/s41592-021-01336-8#data-availability
 
-Download from Figshare:  
-[https://figshare.com/articles/dataset/Benchmarking_atlas-level_data_integration_in_single-cell_genomics_-_integration_task_datasets_Immune_and_pancreas_/12420968](https://figshare.com/articles/dataset/Benchmarking_atlas-level_data_integration_in_single-cell-genomics_-_integration_task_datasets_Immune_and_pancreas_/12420968)
+Download from Figshare:
+https://figshare.com/articles/dataset/Benchmarking_atlas-level_data_integration_in_single-cell_genomics_-_integration_task_datasets_Immune_and_pancreas_/12420968 
 
 Data format: `.h5ad`
 
